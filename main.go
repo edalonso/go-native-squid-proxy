@@ -31,6 +31,12 @@ func main() {
 
     // Setup metrics
     http.Handle("/metrics", promhttp.Handler())
+    go func() {
+        sugar.Infof("Starting metric server on %s", cfg.MetricServerAddress)
+        if err := http.ListenAndServe(":8081", nil); err != nil {
+            sugar.Fatalf("Failed to start metric sever: %v", err)
+        }
+    }()
 
     // Initialize and start the proxy server
     proxyServer := proxy.NewProxyServer(cfg, sugar)
