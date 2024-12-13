@@ -3,7 +3,9 @@ package handler
 import (
     "io"
     "net"
+    "log"
 
+    logger "proxy-server/pkg/log" // Alias to avoid redeclaration with standard log package
     "github.com/valyala/fasthttp"
     "proxy-server/pkg/metrics"
     "proxy-server/pkg/pool"
@@ -12,6 +14,14 @@ import (
 // HandleRequest handles both normal HTTP requests and HTTP CONNECT requests for HTTPS
 func HandleRequest(ctx *fasthttp.RequestCtx) {
     metrics.IncrementRequestCounter()
+    // Setup logging
+    loggerInstance, err := logger.NewLogger("info")
+    if err != nil {
+        log.Fatalf("Error setting up logger: %v", err)
+    }
+    defer loggerInstance.Sync()
+    sugar := loggerInstance.Sugar()
+    sugar.Infof("Requested URI: %s. Requested path: %s. Method: %s. From IP: %s", string(ctx.RequestURI()), string(ctx.Path()), string(ctx.Method()), ctx.RemoteAddr().String())
 
     // Handle HTTP CONNECT method for HTTPS proxying
     if string(ctx.Method()) == fasthttp.MethodConnect {
