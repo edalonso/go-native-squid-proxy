@@ -6,15 +6,17 @@ import (
 )
 
 type Config struct {
-    ServerAddress  string
-    MaxConnections int
-    LogLevel       string
+    MetricServerAddress  string
+    ServerAddress         string
+    MaxConnections        int
+    LogLevel              string
     // Add more configuration fields as needed
 }
 
 func LoadConfig() (*Config, error) {
     viper.SetConfigName("config")
     viper.AddConfigPath(".")
+    viper.SetDefault("MetricServerAddress", ":8081")
     viper.SetDefault("ServerAddress", ":8080")
     viper.SetDefault("MaxConnections", 10000)
     viper.SetDefault("LogLevel", "info")
@@ -29,6 +31,9 @@ func LoadConfig() (*Config, error) {
     }
 
     // Validate the configuration
+    if config.MetricServerAddress == "" {
+        return nil, fmt.Errorf("MetricServerAddress cannot be empty")
+    }
     if config.ServerAddress == "" {
         return nil, fmt.Errorf("ServerAddress cannot be empty")
     }
