@@ -1,7 +1,6 @@
 package main
 
 import (
-    "log" // Standard library log package
     "net/http"
     "os"
     "os/signal"
@@ -18,29 +17,21 @@ func main() {
     // Load configuration
     cfg, err := config.LoadConfig()
     if err != nil {
-        log.Fatalf("Error loading config: %v", err)
+        logger.Sugar.Fatalf("Error loading config: %v", err)
     }
-
-    // Setup logging
-    loggerInstance, err := logger.NewLogger(cfg.LogLevel)
-    if err != nil {
-        log.Fatalf("Error setting up logger: %v", err)
-    }
-    defer loggerInstance.Sync()
-    sugar := loggerInstance.Sugar()
 
     // Setup metrics
     http.Handle("/metrics", promhttp.Handler())
     go func() {
-        sugar.Infof("Starting metric server on %s", cfg.MetricServerAddress)
+        logger.Sugar.Infof("Starting metric server on %s", cfg.MetricServerAddress)
         if err := http.ListenAndServe(":8081", nil); err != nil {
-            sugar.Fatalf("Failed to start metric sever: %v", err)
+            logger.Sugar.Fatalf("Failed to start metric sever: %v", err)
         }
     }()
 
     // Initialize and start the proxy server
-    proxyServer := proxy.NewProxyServer(cfg, sugar)
-    sugar.Infof("Starting proxy server on %s", cfg.ServerAddress)
+    proxyServer := proxy.NewProxyServer(cfg, logger.Sugar)
+    logger.Sugar.Infof("Starting proxy server on %s", cfg.ServerAddress)
 
     // Channel to handle OS signals for graceful shutdown
     quit := make(chan os.Signal, 1)
@@ -48,15 +39,15 @@ func main() {
 
     go func() {
         if err := proxyServer.Start(); err != nil {
-            sugar.Fatalf("Failed to start proxy server: %v", err)
+            logger.Sugar.Fatalf("Failed to start proxy server: %v", err)
         }
     }()
 
     // Wait for interrupt signal to gracefully shut down the server
     <-quit
-    sugar.Info("Shutting down proxy server...")
+    logger.Sugar.Info("Shutting down proxy server...")
     if err := proxyServer.Shutdown(); err != nil {
-        sugar.Fatalf("Failed to gracefully shut down proxy server: %v", err)
+        logger.Sugar.Fatalf("Failed to gracefully shut down proxy server: %v", err)
     }
-    sugar.Info("Proxy server stopped")
+    logger.Sugar.Info("Proxy server stopped")
 }
