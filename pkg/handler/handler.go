@@ -48,12 +48,17 @@ func handleHTTP(ctx *fasthttp.RequestCtx) {
 // handleTunneling handles HTTP CONNECT requests
 func handleTunneling(ctx *fasthttp.RequestCtx) {
     dest := ""
-    str_host:=string(ctx.Host())
-    if strings.Contains(":", str_host) {
-        dest = str_host
+    if len(ctx.Host()) > 0 {
+        dest=string(ctx.Host())
     } else {
-        dest = str_host + ":443"
+        logger.Sugar.Infof("Host header is empty, configuring destination from requestURI: %s", ctx.RequestURI())
+        dest=string(ctx.RequestURI())
     }
+    if !strings.Contains(dest, ":") {
+        logger.Sugar.Info("Configure port 443 from code.")
+        dest += ":443"
+    }
+    logger.Sugar.Infof("Final destination: %s", dest)
     destinationConn, err := net.Dial("tcp", dest)
     if err != nil {
         logger.Sugar.Errorf("Failed to connect to destination: %s", err.Error())
